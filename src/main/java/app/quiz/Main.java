@@ -1,11 +1,16 @@
 package app.quiz;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import app.quiz.game.QuizGame;
 import app.quiz.model.OnQuizLoadListener;
 import app.quiz.model.Quiz;
 import app.quiz.model.QuizRepository;
+import app.quiz.model.QuizResult;
 import app.quiz.util.AppLogger;
+import app.quiz.util.ResultFileWriter;
 
 public class Main {
 
@@ -25,31 +30,31 @@ public class Main {
                         + quizzes.size()
                         + "問");
 
-                // 1問目が存在する場合だけ表示
-                if (!quizzes.isEmpty()) {
-
-                    Quiz firstQuiz = quizzes.get(0);
-
-                    AppLogger.print(
-                            "第1問: "
-                            + firstQuiz.getQuestion());
-
-                    AppLogger.print(
-                            "選択肢1: "
-                            + firstQuiz.getChoice1());
-
-                    AppLogger.print(
-                            "選択肢2: "
-                            + firstQuiz.getChoice2());
-
-                    AppLogger.print(
-                            "選択肢3: "
-                            + firstQuiz.getChoice3());
-
-                    AppLogger.print(
-                            "選択肢4: "
-                            + firstQuiz.getChoice4());
+                if (quizzes == null || quizzes.isEmpty()) {
+                    AppLogger.print("問題データがありません。");
+                    return;
                 }
+
+                // クイズを開始して得点を受け取る
+                QuizGame game = new QuizGame();
+                int score = game.start(quizzes);
+
+                // 終了日時を作成
+                String completedAt = LocalDateTime.now()
+                        .format(DateTimeFormatter.ofPattern(
+                                "yyyy-MM-dd HH:mm:ss"));
+
+                // 保存する結果データを作成
+                QuizResult result = new QuizResult(
+                        score,
+                        quizzes.size(),
+                        completedAt);
+
+                // result.jsonへ保存
+                ResultFileWriter fileWriter =
+                        new ResultFileWriter();
+
+                fileWriter.save(result);
             }
 
             @Override
@@ -61,7 +66,6 @@ public class Main {
         });
 
         AppLogger.print(
-                "Mainメソッドの処理はここで終わりです。"
-                + "通信はバックグラウンドで続いています。");
+                "問題データをバックグラウンドで読み込んでいます。");
     }
 }
